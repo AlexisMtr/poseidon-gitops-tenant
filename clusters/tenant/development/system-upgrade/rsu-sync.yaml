@@ -1,0 +1,57 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: GitRepository
+metadata:
+  name: rancher-system-upgrade
+  namespace: flux-system
+spec:
+  interval: 3600m0s
+  ref:
+    tag: v0.9.1
+  url: https://github.com/rancher/system-upgrade-controller
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: rancher-system-upgrade
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  path: ./
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: rancher-system-upgrade
+  validation: client
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: control-plane-upgrade
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  dependsOn:
+    - name: rancher-system-upgrade
+  path: clusters/tenant/development/system-upgrade/control-plane/
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  validation: client
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta1
+kind: Kustomization
+metadata:
+  name: worker-upgrade
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  dependsOn:
+    - name: control-plane-upgrade
+  path: clusters/tenant/development/system-upgrade/worker-node/
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  validation: client
